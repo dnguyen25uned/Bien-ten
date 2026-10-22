@@ -49,7 +49,7 @@ export interface NameplateConfig {
 
 export const DEFAULT_CONFIG: NameplateConfig = {
   rank: 'ĐẠI UÝ',
-  fullName: 'NGUYỄN MẠNH HÙNG',
+  fullName: 'NGUYỄN MẠNH TUẤN',
   title: 'ĐỘI TRƯỞNG TM-HC',
 
   bgColor: '#ff0000',

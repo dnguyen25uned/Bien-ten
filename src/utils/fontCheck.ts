@@ -27,7 +27,7 @@ export async function checkFontLoaded(fontName = 'UTM HelvetIns'): Promise<boole
  * Đo tỷ lệ Cap-Height (chiều cao thực tế của chữ in hoa không dấu như N, H, E, V, T)
  * so với font-size của font hiện tại.
  * Trong SVG/CSS, font-size là chiều cao ô Em-square, trong khi thân chữ in hoa (Cap-Height)
- * thường chỉ chiếm khoảng 72% - 76% font-size. Đo chính xác tỷ lệ này giúp chữ "NGUYỄN MẠNH HÙNG"
+ * thường chỉ chiếm khoảng 72% - 76% font-size. Đo chính xác tỷ lệ này giúp chữ "NGUYỄN MẠNH TUẤN"
  * có chiều cao thân chữ đạt đúng 1.5cm và "ĐẠI UÝ" / "ĐỘI TRƯỞNG TM-HC" đạt đúng 1.0cm theo đường gióng.
  */
 export function getCapHeightRatio(fontFamily: string): number {
