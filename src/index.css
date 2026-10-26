@@ -299,6 +299,22 @@ body {
   font-size: 1.15rem;
 }
 
+/* Dòng ghi công dưới bảng xem trước thành phẩm (không xuất hiện khi in) */
+.preview-footer {
+  margin-top: 1.4rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border-color);
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: #64748b;
+}
+
+.preview-footer strong {
+  color: #334155;
+  font-weight: 600;
+}
+
 .preview-stage {
   display: flex;
   flex-direction: column;

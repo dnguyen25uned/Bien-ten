@@ -146,6 +146,9 @@ export function App() {
                 svgRef={svgRef}
                 isPrintMode={false}
               />
+              <footer className="preview-footer">
+                Thiết kế bởi <strong>N.K.Đạt</strong> - BĐBP TP.HCM
+              </footer>
             </div>
           </div>
         </main>
