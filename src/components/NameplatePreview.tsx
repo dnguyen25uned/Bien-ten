@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { FlipHorizontal2, Scissors } from 'lucide-react';
 import { NameplateConfig } from '../types/nameplate';
 import { getCapHeightRatio, measureTextWidthCm } from '../utils/fontCheck';
 
@@ -15,6 +16,15 @@ interface ProcessedLine {
   svgFontSizeCm: number;
   scaleX: number;
   isCompressed: boolean;
+}
+
+interface FaceOptions {
+  /** Lật mặt sau (mirror / xoay 180°) theo cấu hình gấp đôi */
+  flipped?: boolean;
+  /** Gắn ref để xuất file SVG (chỉ dùng cho mặt trước) */
+  bindRef?: boolean;
+  /** Hiện khung gióng kích thước (chỉ có trên màn hình) */
+  showGuides?: boolean;
 }
 
 export const NameplatePreview: React.FC<Props> = ({
@@ -110,6 +120,23 @@ export const NameplatePreview: React.FC<Props> = ({
   const borderMarginCm = config.borderMarginMm / 10;
   const borderStrokeCm = config.borderThicknessMm / 10;
 
+  // ----- Hiệu ứng gấp đôi 2 mặt (mirror) -----
+  const foldEnabled = config.foldMode !== 'none';
+  const foldGapMm = foldEnabled ? Math.max(0, config.foldGapMm) : 0;
+  const foldModeLabel =
+    config.foldMode === 'mirrorX' ? 'lật gương ngang' : 'xoay 180°';
+
+  /**
+   * Phép biến đổi cho mặt thứ 2 (mặt sau) trong khung viewBox của mặt biển:
+   * - rotate180: xoay quanh tâm biển. Đây là phép biến đổi ĐÚNG khi gấp giấy:
+   *   sau khi gấp đôi theo đường gấp, mặt sau đọc xuôi y như mặt trước.
+   * - mirrorX: lật gương ngang (dùng cho mica trong / in qua mặt sau).
+   */
+  const backFaceTransform =
+    config.foldMode === 'mirrorX'
+      ? `translate(${config.plateWidthCm} 0) scale(-1 1)`
+      : `rotate(180 ${config.plateWidthCm / 2} ${config.plateHeightCm / 2})`;
+
   /**
    * Vẽ từng khối chữ sao cho chân chữ (alphabetic baseline) nằm đúng đường gióng dưới của dải
    * và đỉnh chữ in hoa chạm đúng đường gióng trên của dải (cao đúng 1cm hoặc 1.5cm).
@@ -178,117 +205,158 @@ export const NameplatePreview: React.FC<Props> = ({
   };
 
   // Nội dung mặt biển SVG (1 đơn vị viewBox = 1 cm thực tế)
-  const renderPlateFace = () => (
-    <svg
-      ref={svgRef}
-      xmlns="http://www.w3.org/2000/svg"
-      width={`${config.plateWidthCm}cm`}
-      height={`${config.plateHeightCm}cm`}
-      viewBox={`0 0 ${config.plateWidthCm} ${config.plateHeightCm}`}
-      className="plate-svg"
-    >
-      {/* Nền biển đỏ */}
-      <rect
-        x={0}
-        y={0}
-        width={config.plateWidthCm}
-        height={config.plateHeightCm}
-        fill={config.bgColor}
-      />
+  const renderPlateFace = (options: FaceOptions = {}) => {
+    const {
+      flipped = false,
+      bindRef = false,
+      showGuides = !isPrintMode && !flipped,
+    } = options;
 
-      {/* Viền vàng bên trong */}
-      <rect
-        x={borderMarginCm}
-        y={borderMarginCm}
-        width={Math.max(0, config.plateWidthCm - borderMarginCm * 2)}
-        height={Math.max(0, config.plateHeightCm - borderMarginCm * 2)}
-        fill="none"
-        stroke={config.borderColor}
-        strokeWidth={borderStrokeCm}
-      />
+    return (
+      <svg
+        ref={bindRef ? svgRef : undefined}
+        xmlns="http://www.w3.org/2000/svg"
+        width={`${config.plateWidthCm}cm`}
+        height={`${config.plateHeightCm}cm`}
+        viewBox={`0 0 ${config.plateWidthCm} ${config.plateHeightCm}`}
+        className="plate-svg"
+        data-plate-face={flipped ? 'back' : 'front'}
+      >
+        {/* Toàn bộ nội dung gom vào 1 nhóm để lật cho mặt sau */}
+        <g
+          className="plate-face-content"
+          transform={flipped ? backFaceTransform : undefined}
+        >
+          {/* Nền biển đỏ */}
+          <rect
+            x={0}
+            y={0}
+            width={config.plateWidthCm}
+            height={config.plateHeightCm}
+            fill={config.bgColor}
+          />
 
-      {/* 3 dòng nội dung đặt đúng vào các dải 1cm - 1.5cm - 1cm */}
-      {renderTextInBand(rankData, rankTopY, config.rankBoxHeightCm)}
-      {renderTextInBand(nameData, nameTopY, config.nameBoxHeightCm)}
-      {renderTextInBand(titleData, titleTopY, config.titleBoxHeightCm)}
+          {/* Viền vàng bên trong */}
+          <rect
+            x={borderMarginCm}
+            y={borderMarginCm}
+            width={Math.max(0, config.plateWidthCm - borderMarginCm * 2)}
+            height={Math.max(0, config.plateHeightCm - borderMarginCm * 2)}
+            fill="none"
+            stroke={config.borderColor}
+            strokeWidth={borderStrokeCm}
+          />
 
-      {/* Lưới gióng kiểm tra kích thước 7 dải (chỉ hiện trên màn hình khi bật) */}
-      {!isPrintMode && config.showDimensionGuides && (
-        <g className="dimension-guides" pointerEvents="none">
-          {[
-            { y1: 0, y2: rankTopY, label: `${config.topMarginCm}cm`, w: 4.5 },
-            { y1: rankTopY, y2: rankBottomY, label: `${config.rankBoxHeightCm}cm`, w: 4.5 },
-            { y1: rankBottomY, y2: nameTopY, label: `${config.gapRankToNameCm}cm`, w: 1.8 },
-            { y1: nameTopY, y2: nameBottomY, label: `${config.nameBoxHeightCm}cm`, w: 1.8 },
-            { y1: nameBottomY, y2: titleTopY, label: `${config.gapNameToTitleCm}cm`, w: 1.8 },
-            { y1: titleTopY, y2: titleBottomY, label: `${config.titleBoxHeightCm}cm`, w: 4.2 },
-            {
-              y1: titleBottomY,
-              y2: config.plateHeightCm,
-              label: `${config.bottomMarginCm}cm`,
-              w: 4.2,
-            },
-          ].map((b, i) => (
-            <g key={i}>
-              <rect
-                x={0.02}
-                y={b.y1}
-                width={b.w}
-                height={Math.max(0, b.y2 - b.y1)}
-                fill="rgba(0, 0, 0, 0.18)"
-                stroke="#00ffff"
-                strokeWidth={0.03}
-              />
-              <line
-                x1={0}
-                y1={b.y2}
-                x2={config.plateWidthCm}
-                y2={b.y2}
-                stroke="rgba(0, 255, 255, 0.45)"
-                strokeWidth={0.02}
-                strokeDasharray="0.15,0.15"
-              />
-              <text
-                x={0.25}
-                y={(b.y1 + b.y2) / 2}
-                fill="#ffffff"
-                fontSize={0.34}
-                fontFamily="sans-serif"
-                dominantBaseline="central"
-                style={{ fontWeight: 700 }}
-              >
-                {b.label}
-              </text>
+          {/* 3 dòng nội dung đặt đúng vào các dải 1cm - 1.5cm - 1cm */}
+          {renderTextInBand(rankData, rankTopY, config.rankBoxHeightCm)}
+          {renderTextInBand(nameData, nameTopY, config.nameBoxHeightCm)}
+          {renderTextInBand(titleData, titleTopY, config.titleBoxHeightCm)}
+
+          {/* Lưới gióng kiểm tra kích thước 7 dải (chỉ hiện trên màn hình khi bật) */}
+          {showGuides && config.showDimensionGuides && (
+            <g className="dimension-guides" pointerEvents="none">
+              {[
+                { y1: 0, y2: rankTopY, label: `${config.topMarginCm}cm`, w: 4.5 },
+                { y1: rankTopY, y2: rankBottomY, label: `${config.rankBoxHeightCm}cm`, w: 4.5 },
+                { y1: rankBottomY, y2: nameTopY, label: `${config.gapRankToNameCm}cm`, w: 1.8 },
+                { y1: nameTopY, y2: nameBottomY, label: `${config.nameBoxHeightCm}cm`, w: 1.8 },
+                { y1: nameBottomY, y2: titleTopY, label: `${config.gapNameToTitleCm}cm`, w: 1.8 },
+                { y1: titleTopY, y2: titleBottomY, label: `${config.titleBoxHeightCm}cm`, w: 4.2 },
+                {
+                  y1: titleBottomY,
+                  y2: config.plateHeightCm,
+                  label: `${config.bottomMarginCm}cm`,
+                  w: 4.2,
+                },
+              ].map((b, i) => (
+                <g key={i}>
+                  <rect
+                    x={0.02}
+                    y={b.y1}
+                    width={b.w}
+                    height={Math.max(0, b.y2 - b.y1)}
+                    fill="rgba(0, 0, 0, 0.18)"
+                    stroke="#00ffff"
+                    strokeWidth={0.03}
+                  />
+                  <line
+                    x1={0}
+                    y1={b.y2}
+                    x2={config.plateWidthCm}
+                    y2={b.y2}
+                    stroke="rgba(0, 255, 255, 0.45)"
+                    strokeWidth={0.02}
+                    strokeDasharray="0.15,0.15"
+                  />
+                  <text
+                    x={0.25}
+                    y={(b.y1 + b.y2) / 2}
+                    fill="#ffffff"
+                    fontSize={0.34}
+                    fontFamily="sans-serif"
+                    dominantBaseline="central"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {b.label}
+                  </text>
+                </g>
+              ))}
             </g>
-          ))}
-        </g>
-      )}
+          )}
 
-      {/* Đường viền cắt cực mảnh khi in */}
-      {isPrintMode && config.printCropMarks && (
-        <rect
-          x={0}
-          y={0}
-          width={config.plateWidthCm}
-          height={config.plateHeightCm}
-          fill="none"
-          stroke="#333333"
-          strokeWidth={0.015}
-          strokeDasharray="0.15,0.15"
-        />
-      )}
-    </svg>
+          {/* Đường viền cắt cực mảnh khi in */}
+          {isPrintMode && config.printCropMarks && (
+            <rect
+              x={0}
+              y={0}
+              width={config.plateWidthCm}
+              height={config.plateHeightCm}
+              fill="none"
+              stroke="#333333"
+              strokeWidth={0.015}
+              strokeDasharray="0.15,0.15"
+            />
+          )}
+        </g>
+      </svg>
+    );
+  };
+
+  /**
+   * Khe gấp nằm giữa 2 mặt: cao đúng bằng khoảng hở (mặc định 0) để không làm lệch
+   * vị trí vật lý của 2 mặt khi in; đường kẻ đứt được đặt tuyệt đối nên không chiếm chỗ.
+   */
+  const renderFoldGap = (prefix: 'fold' | 'print-fold') => (
+    <div
+      className={`${prefix}-gap`}
+      style={{ height: `${foldGapMm}mm` }}
+      aria-hidden="true"
+    >
+      {config.foldShowLine && <div className={`${prefix}-crease-line`} />}
+    </div>
   );
 
   if (isPrintMode) {
     return (
       <div className="print-sheet">
-        <div className="print-plate-wrapper">{renderPlateFace()}</div>
-        {config.printTwoSides && (
-          <div className="print-plate-wrapper" style={{ marginTop: '8mm' }}>
-            {renderPlateFace()}
-          </div>
-        )}
+        <div className="print-sheet-stack">
+          <div className="print-plate-wrapper">{renderPlateFace()}</div>
+
+          {foldEnabled ? (
+            <>
+              {renderFoldGap('print-fold')}
+              <div className="print-plate-wrapper">
+                {renderPlateFace({ flipped: true })}
+              </div>
+            </>
+          ) : (
+            config.printTwoSides && (
+              <div className="print-plate-wrapper" style={{ marginTop: '8mm' }}>
+                {renderPlateFace()}
+              </div>
+            )
+          )}
+        </div>
       </div>
     );
   }
@@ -313,7 +381,7 @@ export const NameplatePreview: React.FC<Props> = ({
       </div>
 
       <div className="assembly-container">
-        <div className="plate-screen-wrapper">{renderPlateFace()}</div>
+        <div className="plate-screen-wrapper">{renderPlateFace({ bindRef: true })}</div>
 
         {config.showStandPreview && (
           <div
@@ -387,6 +455,34 @@ export const NameplatePreview: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Xem trước bố cục tờ in gấp đôi: mặt trước + mặt sau đã lật */}
+      {foldEnabled && (
+        <div className="fold-print-preview">
+          <div className="fold-print-caption">
+            <FlipHorizontal2 size={16} />
+            <span>
+              Bố cục tờ in gấp đôi – mặt sau {foldModeLabel}
+            </span>
+          </div>
+
+          <div className="fold-stack">
+            <div className="fold-face">{renderPlateFace({ showGuides: false })}</div>
+            {renderFoldGap('fold')}
+            <div className="fold-face">{renderPlateFace({ flipped: true })}</div>
+          </div>
+
+          <div className="fold-legend">
+            <span>
+              <Scissors size={13} /> Trên: mặt trước · Dưới: mặt sau (đã lật sẵn)
+            </span>
+            <span>
+              Gấp theo đường kẻ đứt, mặt in ra ngoài → 2 mặt đều đọc xuôi và đúng{' '}
+              {config.plateWidthCm} × {config.plateHeightCm} cm.
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

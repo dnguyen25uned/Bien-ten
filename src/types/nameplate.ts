@@ -1,3 +1,13 @@
+/**
+ * Kiểu lật mặt sau khi in gấp đôi:
+ * - 'none'      : chỉ in 1 mặt (như trước đây).
+ * - 'rotate180' : mặt sau xoay 180° – ĐÚNG vật lý khi gấp giấy: sau khi gấp đôi theo
+ *                 đường gấp, cả 2 mặt đều đọc xuôi, chữ không bị ngược.
+ * - 'mirrorX'   : mặt sau lật gương ngang (scaleX = -1). Chữ sẽ bị ngược nếu nhìn trực
+ *                 tiếp – chỉ dùng khi in lên mica/giấy trong rồi nhìn xuyên từ mặt sau.
+ */
+export type FoldMode = 'none' | 'rotate180' | 'mirrorX';
+
 export interface NameplateConfig {
   // Nội dung 3 dòng
   rank: string;
@@ -45,6 +55,11 @@ export interface NameplateConfig {
   pageMarginMm: number;
   printCropMarks: boolean;
   printTwoSides: boolean;
+
+  // Hiệu ứng mirror – in gấp đôi thành 2 mặt
+  foldMode: FoldMode;        // Kiểu lật mặt sau ('none' = tắt)
+  foldGapMm: number;         // Khoảng hở giữa 2 mặt (mm). 0 = gấp sát thành 1 tấm liền
+  foldShowLine: boolean;     // In đường gấp (nét đứt) giữa 2 mặt
 }
 
 export const DEFAULT_CONFIG: NameplateConfig = {
@@ -87,4 +102,9 @@ export const DEFAULT_CONFIG: NameplateConfig = {
   pageMarginMm: 15,
   printCropMarks: true,
   printTwoSides: false,
+
+  // Bật sẵn hiệu ứng gấp đôi: in 2 mặt, mặt dưới xoay 180° để gấp lại đọc xuôi
+  foldMode: 'rotate180',
+  foldGapMm: 0,
+  foldShowLine: true,
 };

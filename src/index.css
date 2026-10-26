@@ -344,6 +344,101 @@ body {
 }
 
 /* ==========================================================================
+   HIỆU ỨNG MIRROR – GẤP ĐÔI 2 MẶT
+   ========================================================================== */
+.fold-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #075985;
+}
+
+.fold-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.fold-note.warn {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+/* Bản xem trước bố cục tờ in gấp đôi */
+.fold-print-preview {
+  width: 100%;
+  max-width: 440px;
+  margin-top: 1.6rem;
+}
+
+.fold-print-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.fold-stack {
+  position: relative;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 2px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.fold-stack .plate-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fold-face {
+  line-height: 0;
+}
+
+.fold-gap,
+.print-fold-gap {
+  position: relative;
+  width: 100%;
+}
+
+.fold-crease-line,
+.print-fold-crease-line {
+  position: absolute;
+  top: 50%;
+  left: -4mm;
+  right: -4mm;
+  height: 0;
+  border-top: 1px dashed #475569;
+}
+
+.fold-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.55rem;
+  font-size: 0.74rem;
+  color: #475569;
+}
+
+.fold-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ==========================================================================
    CHẾ ĐỘ IN ẤN CHUẨN VẬT LÝ (15cm x 8.5cm)
    ========================================================================== */
 .print-only {
@@ -374,6 +469,22 @@ body {
     align-items: center;
     justify-content: flex-start;
     width: 100%;
+  }
+
+  /* Tờ in gấp đôi: 2 mặt sát nhau, đường gấp đặt tuyệt đối nên không làm lệch kích thước */
+  .print-sheet-stack {
+    position: relative;
+    page-break-inside: avoid;
+  }
+
+  .print-plate-wrapper {
+    page-break-inside: avoid;
+  }
+
+  .print-fold-crease-line {
+    border-top: 0.2mm dashed #64748b;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Giữ nguyên kích thước vật lý cm/mm tuyệt đối, không bị giới hạn bởi max-width */

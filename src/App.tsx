@@ -49,14 +49,51 @@ export function App() {
   };
 
   const handleDownloadSvg = () => {
-    if (!svgRef.current) return;
-    const serializer = new XMLSerializer();
-    let source = serializer.serializeToString(svgRef.current);
+    // Lấy đúng các mặt biển trong khu vực in: 1 mặt, hoặc 2 mặt (mặt sau đã lật) khi bật gấp đôi
+    const printFaces = Array.from(
+      document.querySelectorAll<SVGSVGElement>('.print-only .plate-svg')
+    );
+    const faces =
+      printFaces.length > 0 ? printFaces : svgRef.current ? [svgRef.current] : [];
+    if (faces.length === 0) return;
 
-    if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
-      source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-    }
-    source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+    const plateW = config.plateWidthCm;
+    const plateH = config.plateHeightCm;
+    const round = (value: number) => Math.round(value * 1000) / 1000;
+
+    const isFolded = faces.length > 1 && config.foldMode !== 'none';
+    const gapCm = isFolded
+      ? Math.max(0, config.foldGapMm) / 10
+      : faces.length > 1
+        ? 0.8
+        : 0;
+    const totalH = faces.length * plateH + (faces.length - 1) * gapCm;
+
+    const serializer = new XMLSerializer();
+    const facesMarkup = faces
+      .map((face, index) => {
+        // Chỉ lấy phần nội dung (đã gồm phép lật của mặt sau), đặt đúng vị trí dọc
+        const content = Array.from(face.childNodes)
+          .map((node) => serializer.serializeToString(node))
+          .join('');
+        const offsetY = round(index * (plateH + gapCm));
+        return `<g transform="translate(0 ${offsetY})">${content}</g>`;
+      })
+      .join('\n');
+
+    const creaseY = round(plateH + gapCm / 2);
+    const creaseMarkup =
+      isFolded && config.foldShowLine
+        ? `<line x1="0" y1="${creaseY}" x2="${plateW}" y2="${creaseY}" stroke="#64748b" stroke-width="0.02" stroke-dasharray="0.2 0.2" />`
+        : '';
+
+    const source = [
+      '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${plateW}cm" height="${round(totalH)}cm" viewBox="0 0 ${plateW} ${round(totalH)}">`,
+      facesMarkup,
+      creaseMarkup,
+      '</svg>',
+    ].join('\n');
 
     const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -65,8 +102,9 @@ export function App() {
       .trim()
       .replace(/\s+/g, '-')
       .replace(/[^a-zA-Z0-9-_À-ỹ]/g, '');
+    const foldSuffix = isFolded ? '-2mat-gap-doi' : faces.length > 1 ? '-2ban' : '';
     link.href = url;
-    link.download = `bien-ten-${safeName || 'mac-dinh'}-${config.plateWidthCm}x${config.plateHeightCm}cm.svg`;
+    link.download = `bien-ten-${safeName || 'mac-dinh'}-${config.plateWidthCm}x${config.plateHeightCm}cm${foldSuffix}.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

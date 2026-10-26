@@ -23,6 +23,7 @@
 
 - 🎨 **Thiết kế trực quan** — chỉnh nội dung biển tên và xem trước ngay trên giao diện
 - 📐 **In chuẩn kích thước thật** — bản in khớp đúng 15 cm × 8,5 cm trên giấy A4
+- 🔁 **In gấp đôi 2 mặt (mirror)** — in 2 mặt trên cùng 1 tờ, mặt sau được lật sẵn để gấp đôi thành biển 2 mặt
 - 🔤 **Hỗ trợ font UTM HelvetIns** — dùng font đã cài trên máy hoặc nhúng trực tiếp vào dự án
 - ⚡ **Chạy ngay trên trình duyệt** — không cần cài đặt phức tạp, mở là dùng
 
@@ -66,6 +67,25 @@ Chép file font `UTM-HelvetIns.ttf` (hoặc `UTM-HelvetIns.woff2`) vào thư m�
 - [x] Nhấn nút **In biển tên** trên giao diện
 - [x] Chọn khổ giấy **A4**
 - [x] Ở mục **Tỷ lệ (Scale)** của hộp thoại in: chọn **100% (Mặc định / Actual Size)** và **tắt** các tùy chọn *Fit to page / Fit to printable area*
+
+## 🔁 In gấp đôi thành 2 mặt (mirror)
+
+Mục **4. Hiệu ứng mirror – Gấp đôi thành 2 mặt** in 2 mặt biển trên cùng một tờ giấy, mặt sau được lật sẵn để sau khi gấp đôi, **cả hai mặt đều đọc xuôi**.
+
+| Kiểu lật mặt sau | Dùng cho |
+|---|---|
+| **Xoay 180° – gấp giấy (chuẩn)** | Gấp đôi tờ giấy thông thường (mặc định) |
+| **Lật gương ngang – mica trong** | In lên mica/giấy trong rồi nhìn xuyên từ mặt sau |
+| **Tắt – chỉ in 1 mặt** | Biển 1 mặt, hoặc in 2 bản rời |
+
+**Cách làm:**
+
+1. Để **Khoảng hở giữa 2 mặt = 0 mm** → hai mặt sát nhau, gấp thành 1 tấm liền.
+2. Bật **In đường gấp** để có nét đứt căn giữa hai mặt.
+3. In với tỷ lệ **100%**, sau đó gấp đôi theo đúng đường kẻ đứt, **mặt in quay ra ngoài**.
+4. Gấp ở mép trên (biển dựng đứng) hay mép dưới (cắm vào chân đế) đều cho kết quả đúng — tờ in đối xứng 180°.
+
+> 💡 Bản xem trước có khối **“Bố cục tờ in gấp đôi”** để kiểm tra trước khi in; nút **Xuất file SVG** cũng xuất đủ 2 mặt (kèm đường gấp) khi bật chế độ này.
 
 ## 📁 Cấu trúc thư mục
 

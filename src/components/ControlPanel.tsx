@@ -1,6 +1,16 @@
 import React from 'react';
-import { NameplateConfig } from '../types/nameplate';
-import { Printer, RotateCcw, Download, AlertTriangle, CheckCircle2, Info, Ruler } from 'lucide-react';
+import { FoldMode, NameplateConfig } from '../types/nameplate';
+import {
+  Printer,
+  RotateCcw,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Ruler,
+  FlipHorizontal2,
+  Scissors,
+} from 'lucide-react';
 
 interface Props {
   config: NameplateConfig;
@@ -37,6 +47,24 @@ export const ControlPanel: React.FC<Props> = ({
       config.bottomMarginCm
     ).toFixed(2)
   );
+
+  const foldEnabled = config.foldMode !== 'none';
+
+  // Kích thước tờ giấy sau khi xoay hướng + vùng in được (đã trừ lề 2 bên)
+  const basePaperWmm = config.paperSize === 'A4' ? 210 : config.customPaperWidthMm;
+  const basePaperHmm = config.paperSize === 'A4' ? 297 : config.customPaperHeightMm;
+  const sheetWmm = config.orientation === 'landscape' ? basePaperHmm : basePaperWmm;
+  const sheetHmm = config.orientation === 'landscape' ? basePaperWmm : basePaperHmm;
+  const printableWmm = Math.max(0, sheetWmm - config.pageMarginMm * 2);
+  const printableHmm = Math.max(0, sheetHmm - config.pageMarginMm * 2);
+
+  const plateWmm = config.plateWidthCm * 10;
+  const plateHmm = config.plateHeightCm * 10;
+  const foldNeededHmm = foldEnabled
+    ? plateHmm * 2 + Math.max(0, config.foldGapMm)
+    : plateHmm;
+  const foldFits =
+    plateWmm <= printableWmm + 0.01 && foldNeededHmm <= printableHmm + 0.01;
 
   return (
     <div className="control-panel">
@@ -291,9 +319,96 @@ export const ControlPanel: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* Phần 4: Thiết lập trang in */}
+      {/* Phần 4: Hiệu ứng mirror – gấp đôi thành 2 mặt */}
       <section className="panel-section">
-        <h3>4. Thiết lập In ấn & Xuất file</h3>
+        <h3>4. Hiệu ứng mirror – Gấp đôi thành 2 mặt</h3>
+        <p className="section-note">
+          In 2 mặt biển trên cùng một tờ giấy: mặt thứ hai được lật sẵn để sau khi gấp đôi,
+          cả hai mặt đều đọc xuôi và vẫn giữ đúng kích thước{' '}
+          <strong>
+            {config.plateWidthCm} × {config.plateHeightCm} cm
+          </strong>
+          .
+        </p>
+
+        <div className="grid-2">
+          <div className="form-group">
+            <label htmlFor="fold-mode">Kiểu lật mặt sau (mirror)</label>
+            <select
+              id="fold-mode"
+              value={config.foldMode}
+              onChange={(e) => updateField('foldMode', e.target.value as FoldMode)}
+            >
+              <option value="rotate180">Xoay 180° – gấp giấy (chuẩn)</option>
+              <option value="mirrorX">Lật gương ngang – mica trong</option>
+              <option value="none">Tắt – chỉ in 1 mặt</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="fold-gap">Khoảng hở giữa 2 mặt (mm)</label>
+            <input
+              id="fold-gap"
+              type="number"
+              min="0"
+              max="40"
+              step="0.5"
+              value={config.foldGapMm}
+              disabled={!foldEnabled}
+              onChange={(e) => updateField('foldGapMm', Number(e.target.value))}
+            />
+            <small className="hint">Để 0 mm khi muốn gấp thành 1 tấm liền.</small>
+          </div>
+        </div>
+
+        <div className="checkbox-row">
+          <input
+            type="checkbox"
+            id="fold-show-line"
+            checked={config.foldShowLine}
+            disabled={!foldEnabled}
+            onChange={(e) => updateField('foldShowLine', e.target.checked)}
+          />
+          <label htmlFor="fold-show-line">In đường gấp (nét đứt) giữa hai mặt</label>
+        </div>
+
+        <div className="fold-note">
+          <Scissors size={16} />
+          <div>
+            <strong>Cách gấp:</strong> in ra, gấp đôi tờ giấy theo đúng đường kẻ đứt,{' '}
+            <em>mặt in quay ra ngoài</em>. Hai nửa tờ giấy trở thành 2 mặt của biển và cùng
+            đọc xuôi. Gấp ở mép trên (biển dựng đứng) hay mép dưới (cắm vào chân đế) đều đúng,
+            vì tờ in đối xứng 180°.
+          </div>
+        </div>
+
+        {foldEnabled && config.foldMode === 'mirrorX' && (
+          <div className="fold-note warn">
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Lưu ý:</strong> “Lật gương ngang” làm chữ ở mặt sau bị ngược khi nhìn trực
+              tiếp – chỉ dùng khi in lên mica/giấy trong rồi nhìn xuyên từ mặt sau. Muốn gấp giấy
+              thông thường, hãy chọn <strong>Xoay 180°</strong>.
+            </div>
+          </div>
+        )}
+
+        {foldEnabled && !foldFits && (
+          <div className="fold-note warn">
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Không đủ chỗ trên tờ giấy:</strong> bản in 2 mặt cần{' '}
+              {Math.round(plateWmm)} × {Math.round(foldNeededHmm)} mm, trong khi vùng in được chỉ
+              còn {Math.round(printableWmm)} × {Math.round(printableHmm)} mm. Hãy giảm lề trang,
+              chọn hướng giấy ngang hoặc giảm kích thước mặt biển.
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Phần 5: Thiết lập trang in */}
+      <section className="panel-section">
+        <h3>5. Thiết lập In ấn & Xuất file</h3>
         <div className="grid-3">
           <div className="form-group">
             <label>Khổ giấy</label>
@@ -337,21 +452,34 @@ export const ControlPanel: React.FC<Props> = ({
           <input
             type="checkbox"
             id="print-two-sides"
-            checked={config.printTwoSides}
+            checked={config.printTwoSides && !foldEnabled}
+            disabled={foldEnabled}
             onChange={(e) => updateField('printTwoSides', e.target.checked)}
           />
           <label htmlFor="print-two-sides">
-            In 2 mặt biển trên cùng 1 tờ A4 (dùng cho biển mica kẹp 2 mặt)
+            In 2 bản rời trên cùng 1 tờ (dùng cho biển mica kẹp 2 mặt)
           </label>
         </div>
+        {foldEnabled && (
+          <small className="hint">
+            Đang bật gấp đôi ở mục 4 nên tùy chọn in 2 bản rời được thay thế bằng bản in
+            gấp đôi (mặt sau đã lật sẵn).
+          </small>
+        )}
 
         <div className="print-instruction-box">
           <Info size={18} />
           <div>
-            <strong>Lưu ý để bản in ra giấy đạt đúng 15 × 8,5 cm:</strong>
+            <strong>Lưu ý để bản in ra giấy đạt đúng {config.plateWidthCm} × {config.plateHeightCm} cm:</strong>
             <ul>
               <li>Chọn khổ giấy <strong>A4</strong>, tỷ lệ (Scale) đặt <strong>100% (Actual size)</strong>.</li>
               <li>Tắt tùy chọn <em>"Fit to page"</em> hoặc <em>"Fit to printable area"</em>.</li>
+              {foldEnabled && (
+                <li>
+                  Tờ in có 2 mặt: gấp đôi theo đường kẻ đứt, mép gấp trùng đúng mép biển để
+                  2 mặt khít nhau (không hở viền trắng).
+                </li>
+              )}
             </ul>
           </div>
         </div>
